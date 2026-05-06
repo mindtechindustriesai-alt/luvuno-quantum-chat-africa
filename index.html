@@ -1,18 +1,954 @@
-   const lastUserMsg = conversationHistory.filter(m => m.role === 'user').pop()?.content;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>LUVUNO — Quantum Sovereign AI | MindTech Industries</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #00B4D8;
+            --primary-dark: #0096C7;
+            --primary-glow: rgba(0,180,216,0.4);
+            --secondary: #00F5D4;
+            --quantum: #8A2BE2;
+            --quantum-glow: rgba(138,43,226,0.5);
+            --success: #00FF88;
+            --danger: #EF476F;
+            --dark-bg: #05080F;
+            --dark-card: #0A0F1A;
+            --glass-border: rgba(0,180,216,0.2);
+            --text-primary: #E8EDF5;
+            --text-secondary: #8A99B0;
+            --sidebar-width: 300px;
+            --font-exo: 'Exo 2', sans-serif;
+            --font-mono: 'Space Mono', monospace;
+            --base-font-size: 16px;
+        }
+        
+        body { 
+            font-family: var(--font-exo); 
+            background: var(--dark-bg); 
+            color: var(--text-primary); 
+            overflow: hidden; 
+            position: relative;
+            font-size: var(--base-font-size);
+        }
+        
+        h1 { font-size: 1.75rem; font-weight: 700; margin: 0.5em 0; color: var(--primary); }
+        h2 { font-size: 1.5rem; font-weight: 600; margin: 0.5em 0; color: var(--secondary); }
+        h3 { font-size: 1.25rem; font-weight: 600; margin: 0.5em 0; }
+        p { margin-bottom: 0.75em; line-height: 1.6; }
+        code { font-family: var(--font-mono); font-size: 0.875rem; background: rgba(0,0,0,0.3); padding: 0.125rem 0.375rem; border-radius: 6px; }
+        pre { background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 12px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.875rem; margin: 1rem 0; }
+        ul, ol { margin: 0.5em 0 0.5em 1.5em; }
+        li { margin: 0.25em 0; }
+        blockquote { border-left: 3px solid var(--quantum); padding-left: 1rem; margin: 1rem 0; color: var(--text-secondary); }
+        
+        #particles-js { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .app-container { display: flex; height: 100vh; position: relative; z-index: 1; max-width: 100%; margin: 0 auto; }
+        
+        .glass-card, .sidebar, .chat-header, .input-area, .footer {
+            background: rgba(5,8,15,0.85);
+            backdrop-filter: blur(12px);
+        }
+        
+        /* Login Overlay */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5,8,15,0.98);
+            backdrop-filter: blur(20px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .login-card {
+            background: var(--dark-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 48px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .login-logo { max-width: 280px; width: 100%; margin-bottom: 20px; filter: drop-shadow(0 0 20px var(--quantum-glow)); }
+        .powered-by {
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+        .demo-btn {
+            background: linear-gradient(135deg, var(--quantum), var(--primary));
+            border: none;
+            padding: 14px 24px;
+            border-radius: 60px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            color: white;
+            transition: all 0.2s;
+        }
+        .demo-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px var(--quantum-glow); }
+        
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            z-index: 2;
+        }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--glass-border); }
+        .new-chat-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--quantum), var(--primary));
+            border: none;
+            padding: 12px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+        .new-chat-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px var(--quantum-glow); }
+        .status-badge {
+            background: rgba(138,43,226,0.2);
+            border: 1px solid var(--quantum);
+            border-radius: 60px;
+            padding: 8px;
+            text-align: center;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            color: var(--secondary);
+        }
+        .chat-history-list { flex: 1; overflow-y: auto; padding: 12px; }
+        .history-item {
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .history-item:hover { background: rgba(0,180,216,0.1); border-color: var(--glass-border); }
+        .history-item.active { background: linear-gradient(135deg, rgba(0,180,216,0.15), rgba(138,43,226,0.1)); border-left: 3px solid var(--primary); }
+        .history-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .history-time { font-size: 10px; color: var(--text-secondary); margin-top: 4px; font-family: var(--font-mono); }
+        
+        /* Profile Card in Sidebar Bottom */
+        .sidebar-bottom {
+            margin-top: auto;
+            padding: 16px;
+            border-top: 1px solid var(--glass-border);
+        }
+        .profile-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.03);
+            margin-bottom: 12px;
+        }
+        .profile-card:hover { background: rgba(0,180,216,0.1); }
+        .profile-avatar {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--quantum), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        .profile-info { flex: 1; }
+        .profile-name { font-size: 14px; font-weight: 600; }
+        .profile-email { font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono); }
+        .sidebar-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        .sidebar-menu-item:hover { background: rgba(0,180,216,0.1); color: var(--text-primary); }
+        .logout-item { color: var(--danger); }
+        .logout-item:hover { background: rgba(239,71,111,0.15); color: var(--danger); }
+        
+        /* Main Chat Area */
+        .main-chat { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
+        .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .logo-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .main-logo { height: 45px; width: auto; filter: drop-shadow(0 0 10px var(--quantum-glow)); }
+        .quantum-badge-header {
+            background: rgba(0,255,136,0.15);
+            border: 1px solid var(--success);
+            border-radius: 60px;
+            padding: 6px 14px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--success);
+        }
+        .export-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 30px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .export-btn:hover { background: var(--primary); color: white; transform: translateY(-2px); }
+        
+        /* Skills */
+        .skills-primary {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 12px 0;
+        }
+        .skill-btn {
+            background: rgba(10,15,26,0.8);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .skill-btn i { font-size: 12px; }
+        .skill-btn:hover { background: rgba(0,180,216,0.2); border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
+        .skill-btn.active { background: linear-gradient(135deg, rgba(0,180,216,0.3), rgba(138,43,226,0.2)); color: var(--secondary); }
+        
+        .skills-dropdown { position: relative; display: inline-block; }
+        .skills-dropdown-btn {
+            background: rgba(10,15,26,0.8); border: 1px solid var(--glass-border); border-radius: 40px;
+            padding: 6px 14px; display: flex; align-items: center; gap: 6px; cursor: pointer;
+            font-size: 12px; font-weight: 600; color: var(--text-secondary);
+        }
+        .skills-dropdown-content {
+            display: none; position: absolute; background: var(--dark-card); border: 1px solid var(--glass-border);
+            border-radius: 16px; z-index: 100; min-width: 150px; right: 0; margin-top: 5px;
+        }
+        .skills-dropdown:hover .skills-dropdown-content { display: block; }
+        .skills-dropdown-content .skill-btn { width: 100%; border-radius: 0; border: none; margin: 0; }
+        
+        /* Controls */
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.3);
+            padding: 5px 15px;
+            border-radius: 40px;
+        }
+        .speed-control label { font-size: 11px; font-family: var(--font-mono); }
+        .speed-control input { width: 100px; cursor: pointer; }
+        .speed-control span { font-size: 11px; font-family: var(--font-mono); color: var(--secondary); min-width: 40px; }
+        
+        .quantum-think-box {
+            background: rgba(138,43,226,0.15);
+            border: 1px solid var(--quantum);
+            border-radius: 60px;
+            padding: 6px 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .quantum-think-box.active { background: rgba(0,255,136,0.15); border-color: var(--success); }
+        .quantum-think-text { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--secondary); }
+        
+        /* Quantum Reasoning Tree */
+        .quantum-reasoning-tree {
+            background: rgba(138,43,226,0.08);
+            border-left: 3px solid var(--quantum);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin: 12px 0;
+            font-family: var(--font-mono);
+            font-size: 13px;
+        }
+        .reasoning-node { margin: 6px 0; }
+        .reasoning-toggle {
+            cursor: pointer;
+            color: var(--secondary);
+            margin-right: 8px;
+        }
+        .reasoning-content { margin-left: 24px; }
+        
+        /* Messages */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .message {
+            display: flex;
+            gap: 14px;
+            max-width: 85%;
+            animation: fadeInUp 0.3s ease;
+        }
+        .message.user { align-self: flex-end; flex-direction: row-reverse; }
+        .message-avatar {
+            width: 40px; height: 40px;
+            background: rgba(0,180,216,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .message-content {
+            background: rgba(255,255,255,0.05);
+            padding: 14px 20px;
+            border-radius: 24px;
+            font-size: 1rem;
+            line-height: 1.6;
+            max-width: 100%;
+            word-wrap: break-word;
+        }
+        .message.user .message-content { background: linear-gradient(135deg, var(--quantum), var(--primary)); }
+        .message-time { font-size: 0.7rem; opacity: 0.5; margin-top: 8px; }
+        
+        /* Action Buttons */
+        .message-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid var(--glass-border);
+        }
+        .message-action {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .message-action:hover { opacity: 1; color: var(--primary); }
+        
+        /* Input Area */
+        .input-area { padding: 16px 24px; border-top: 1px solid var(--glass-border); }
+        .input-wrapper { display: flex; gap: 10px; align-items: flex-end; }
+        .input-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        .input-btn:hover { background: var(--primary); color: white; transform: scale(1.05); }
+        .voice-btn.recording { background: var(--danger); color: white; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+        
+        .chat-input {
+            flex: 1;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 12px 18px;
+            color: white;
+            font-size: 0.95rem;
+            font-family: var(--font-exo);
+            outline: none;
+            resize: none;
+        }
+        .chat-input:focus { border-color: var(--primary); }
+        .send-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .send-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--primary-glow); }
+        .stop-btn {
+            background: var(--danger);
+            border: none;
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: none;
+        }
+        .stop-btn.show { display: inline-flex; align-items: center; justify-content: center; }
+        
+        .typing-indicator { display: flex; gap: 6px; padding: 10px 14px; background: rgba(255,255,255,0.05); border-radius: 18px; width: fit-content; }
+        .typing-indicator span { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; animation: typing 1.4s infinite; }
+        @keyframes typing { 0%,60%,100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
+        
+        .scroll-down-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--quantum);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            box-shadow: 0 4px 15px var(--quantum-glow);
+        }
+        .scroll-down-btn.show { display: flex; }
+        
+        /* Footer with 5 logos - CleanMachine CENTER */
+        .footer {
+            padding: 10px 24px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 35px;
+            flex-wrap: wrap;
+        }
+        .footer-logo { height: 35px; width: auto; opacity: 0.7; transition: all 0.3s; }
+        .footer-logo:hover { opacity: 1; transform: scale(1.05); }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--dark-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        @media (max-width: 900px) {
+            .sidebar { width: 280px; position: fixed; left: -280px; transition: left 0.3s; z-index: 1000; }
+            .sidebar.open { left: 0; }
+            .menu-toggle { display: block; position: fixed; top: 20px; left: 20px; z-index: 1001; background: var(--quantum); border: none; color: white; padding: 10px; border-radius: 50%; cursor: pointer; }
+            .message { max-width: 95%; }
+            .footer-logo { height: 28px; }
+        }
+        .menu-toggle { display: none; }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+    
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-card">
+            <img src="https://i.postimg.cc/yYPDHtky/Luvuno-Quantum-Chat-image-removebg-preview.png" alt="Luvuno" class="login-logo">
+            <div class="powered-by">POWERED BY MINDTECH INDUSTRIES</div>
+            <button id="demoLoginBtn" class="demo-btn"><i class="fas fa-flask"></i> Enter Quantum Portal</button>
+        </div>
+    </div>
+    
+    <div class="app-container" id="appContainer" style="display: none;">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <button id="newChatBtn" class="new-chat-btn"><i class="fas fa-plus"></i> New Chat</button>
+                <div class="status-badge">⚛️ QUANTUM ROUTING · S=2.76</div>
+            </div>
+            <div class="chat-history-list" id="chatHistoryList">
+                <div style="text-align: center; padding: 20px;">No chats yet</div>
+            </div>
+            
+            <div class="sidebar-bottom">
+                <div id="profileCard" class="profile-card">
+                    <div class="profile-avatar"><i class="fas fa-user-astronaut"></i></div>
+                    <div class="profile-info">
+                        <div class="profile-name" id="userName">Khulu Mdluli</div>
+                        <div class="profile-email" id="userEmail">khulu@mindtech.africa</div>
+                    </div>
+                    <i class="fas fa-chevron-right" style="opacity: 0.6; font-size: 12px;"></i>
+                </div>
+                <div id="settingsBtn" class="sidebar-menu-item"><i class="fas fa-sliders-h"></i> Settings</div>
+                <div id="helpBtn" class="sidebar-menu-item"><i class="fas fa-question-circle"></i> Help & Support</div>
+                <div id="logoutBtn" class="sidebar-menu-item logout-item"><i class="fas fa-sign-out-alt"></i> Logout</div>
+            </div>
+        </aside>
+        
+        <!-- MAIN CHAT AREA -->
+        <main class="main-chat">
+            <header class="chat-header">
+                <div class="logo-bar">
+                    <img src="https://i.postimg.cc/yYPDHtky/Luvuno-Quantum-Chat-image-removebg-preview.png" class="main-logo">
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <div class="quantum-badge-header">⚛️ QUANTUM ACTIVE · 98.4%</div>
+                        <button id="exportChatBtn" class="export-btn"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                </div>
+                
+                <div class="skills-primary" id="primarySkills"></div>
+                <div class="skills-dropdown" id="dropdownSkills">
+                    <button class="skills-dropdown-btn"><i class="fas fa-ellipsis-h"></i> More Skills</button>
+                    <div class="skills-dropdown-content" id="dropdownSkillsList"></div>
+                </div>
+                
+                <div class="control-row">
+                    <div class="speed-control">
+                        <label><i class="fas fa-tachometer-alt"></i> Speed</label>
+                        <input type="range" id="speedSlider" min="10" max="100" value="35" step="5">
+                        <span id="speedValue">35</span>
+                        <span style="font-size: 10px;">cps</span>
+                    </div>
+                    <div class="speed-control" style="margin-left: auto;">
+                        <label><i class="fas fa-font"></i> Font Size</label>
+                        <input type="range" id="fontSizeSlider" min="14" max="20" value="16" step="1">
+                        <span id="fontSizeValue">16</span>
+                        <span style="font-size: 10px;">px</span>
+                    </div>
+                    <div id="quantumThinkBox" class="quantum-think-box">
+                        <span>🧠</span>
+                        <span class="quantum-think-text">QUANTUM REASONING</span>
+                        <span id="quantumThinkStatus">OFF</span>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="messages-container" id="messagesContainer">
+                <div class="message ai">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <p><strong>Hi! I'm Luvuno</strong>, your AI assistant for Luvuno OS on the quantum portal. 🌌</p>
+                        <p>I'm here to help you navigate, explore, and get things done — whether that's answering questions, solving problems, or just having a great conversation.</p>
+                        <p>⚛️ I route through 7 backends (98.4% correlation). I speak English, Zulu, Xhosa, Shona. Toggle <strong>Quantum Reasoning</strong> for step-by-step visual breakdowns.</p>
+                        <div class="message-time">⚛️ CHSH S=2.76 · 38% above classical</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <button id="attachBtn" class="input-btn"><i class="fas fa-paperclip"></i></button>
+                    <button id="imageBtn" class="input-btn"><i class="fas fa-camera"></i></button>
+                    <button id="voiceBtn" class="input-btn voice-btn"><i class="fas fa-microphone"></i></button>
+                    <input type="file" id="fileInput" multiple style="display: none;">
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                    <textarea id="chatInput" class="chat-input" rows="1" placeholder="Ask Luvuno... paste document, upload files, or just type..."></textarea>
+                    <button id="sendBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+                    <button id="stopBtn" class="stop-btn"><i class="fas fa-stop"></i></button>
+                </div>
+                <div id="uploadStatus" style="font-size: 11px; margin-top: 8px; color: var(--text-secondary);"></div>
+            </div>
+            
+            <div class="footer">
+                <img src="https://i.postimg.cc/zXW78GNH/Mind-Tech-Transparent-Logo.png" alt="MindTech" class="footer-logo">
+                <img src="https://i.postimg.cc/RFQfK9k5/os-finallogo-removebg-preview.png" alt="MQOS" class="footer-logo">
+                <img src="https://i.postimg.cc/8zVP7V0t/cleanmachine-image-removebg-preview.png" alt="CleanMachine" class="footer-logo">
+                <img src="https://i.postimg.cc/44m1NBFY/Entangle-Guard-New-Logo-image-3-removebg-preview.png" alt="EntangleGuard" class="footer-logo">
+                <img src="https://i.postimg.cc/yYPDHtky/Luvuno-Quantum-Chat-image-removebg-preview.png" alt="Luvuno OS" class="footer-logo">
+            </div>
+        </main>
+    </div>
+    
+    <button class="scroll-down-btn" id="scrollDownBtn"><i class="fas fa-arrow-down"></i></button>
+    
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+            <h3><i class="fas fa-sliders-h"></i> Settings</h3>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 6px;">Response Style</label>
+                <select id="responseStyle" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 12px; color: white;">
+                    <option value="concise">Concise</option>
+                    <option value="detailed" selected>Detailed</option>
+                    <option value="expert">Expert (Technical)</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 6px;">Theme</label>
+                <select id="themeSelect" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 12px; color: white;">
+                    <option value="quantum" selected>Quantum Dark</option>
+                    <option value="light">Light (Coming Soon)</option>
+                </select>
+            </div>
+            <button id="saveSettingsBtn" class="new-chat-btn" style="margin-top: 16px;">Save Settings</button>
+        </div>
+    </div>
+    
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('helpModal')">✕</button>
+            <h3><i class="fas fa-question-circle"></i> Help & Support</h3>
+            <p><strong>Luvuno</strong> — Quantum Sovereign AI</p>
+            <hr style="margin: 16px 0;">
+            <p><i class="fas fa-brain"></i> <strong>Quantum Reasoning</strong> — Toggle for step-by-step visual analysis</p>
+            <p><i class="fas fa-microphone"></i> <strong>Voice Input</strong> — Click microphone, speak in English/Zulu/Xhosa/Shona</p>
+            <p><i class="fas fa-image"></i> <strong>Image Generation</strong> — Type "give me an image of X"</p>
+            <p><i class="fas fa-file-alt"></i> <strong>File Upload</strong> — PDF, TXT, ZIP, HTML, Images</p>
+            <p><i class="fas fa-download"></i> <strong>Export</strong> — Save conversations as PDF or Word</p>
+            <p><i class="fas fa-paste"></i> <strong>Paste from Document</strong> — Ctrl+V retains formatting</p>
+            <hr style="margin: 16px 0;">
+            <p><strong>Contact:</strong> <a href="mailto:support@mindtech.africa" style="color: var(--primary);">support@mindtech.africa</a></p>
+            <p><strong>Version:</strong> 1.0 — Quantum Edition</p>
+            <p><strong>Powered by MindTech Industries</strong></p>
+        </div>
+    </div>
+    
+    <script>
+        // ============================================================
+        // LUVUNO — COMPLETE FEATURE SET
+        // ============================================================
+        
+        const BACKEND_URL = "https://luvuno-backend-proxy.onrender.com";
+        
+        // State
+        let currentChatId = null;
+        let conversationHistory = [];
+        let activeSkill = null;
+        let quantumThinkMode = false;
+        let sessionCount = 0;
+        let qtCount = 0;
+        let recentQuestions = JSON.parse(localStorage.getItem('luvuno_recent_q') || '[]');
+        let currentController = null;
+        let isStreaming = false;
+        let streamingSpeed = parseInt(localStorage.getItem('luvuno_speed') || '35');
+        let currentFontSize = parseInt(localStorage.getItem('luvuno_font_size') || '16');
+        
+        // DOM Elements
+        const loginOverlay = document.getElementById('loginOverlay');
+        const appContainer = document.getElementById('appContainer');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const newChatBtn = document.getElementById('newChatBtn');
+        const chatHistoryList = document.getElementById('chatHistoryList');
+        const userNameSpan = document.getElementById('userName');
+        const userEmailSpan = document.getElementById('userEmail');
+        const attachBtn = document.getElementById('attachBtn');
+        const fileInput = document.getElementById('fileInput');
+        const imageBtn = document.getElementById('imageBtn');
+        const imageInput = document.getElementById('imageInput');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const quantumThinkBox = document.getElementById('quantumThinkBox');
+        const quantumThinkStatus = document.getElementById('quantumThinkStatus');
+        const scrollDownBtn = document.getElementById('scrollDownBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const fontSizeSlider = document.getElementById('fontSizeSlider');
+        const fontSizeValue = document.getElementById('fontSizeValue');
+        const exportChatBtn = document.getElementById('exportChatBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const helpBtn = document.getElementById('helpBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const profileCard = document.getElementById('profileCard');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const responseStyleSelect = document.getElementById('responseStyle');
+        
+        function applyFontSize(size) {
+            document.documentElement.style.setProperty('--base-font-size', size + 'px');
+            if (fontSizeValue) fontSizeValue.innerText = size;
+            localStorage.setItem('luvuno_font_size', size);
+        }
+        
+        // Skills
+        const primarySkills = [
+            { id: "coding", icon: "fa-code", label: "Coding" },
+            { id: "africanHistory", icon: "fa-globe-africa", label: "African History" },
+            { id: "science", icon: "fa-flask", label: "Science" },
+            { id: "health", icon: "fa-heartbeat", label: "Health" },
+            { id: "strategy", icon: "fa-bullseye", label: "Strategy" }
+        ];
+        const secondarySkills = [
+            { id: "image", icon: "fa-image", label: "Image" },
+            { id: "math", icon: "fa-sigma", label: "Math" },
+            { id: "robotics", icon: "fa-robot", label: "Robotics" },
+            { id: "finance", icon: "fa-chart-line", label: "Finance" },
+            { id: "wealth", icon: "fa-coins", label: "Wealth" }
+        ];
+        
+        const primaryContainer = document.getElementById('primarySkills');
+        const dropdownList = document.getElementById('dropdownSkillsList');
+        
+        function toggleSkill(skillId, label) {
+            if (activeSkill === skillId) {
+                activeSkill = null;
+                document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('active'));
+                addMessage(`⚙️ ${label} mode off. Back to general.`, 'ai');
+            } else {
+                document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('active'));
+                activeSkill = skillId;
+                document.querySelectorAll(`.skill-btn[data-skill="${skillId}"]`).forEach(btn => btn.classList.add('active'));
+                addMessage(`🧠 ${label} mode active. Ask me anything in this domain.`, 'ai');
+            }
+        }
+        
+        primarySkills.forEach(skill => {
+            const btn = document.createElement('button');
+            btn.className = 'skill-btn';
+            btn.dataset.skill = skill.id;
+            btn.innerHTML = `<i class="fas ${skill.icon}"></i><span>${skill.label}</span>`;
+            btn.onclick = () => toggleSkill(skill.id, skill.label);
+            primaryContainer.appendChild(btn);
+        });
+        
+        secondarySkills.forEach(skill => {
+            const btn = document.createElement('button');
+            btn.className = 'skill-btn';
+            btn.dataset.skill = skill.id;
+            btn.innerHTML = `<i class="fas ${skill.icon}"></i><span>${skill.label}</span>`;
+            btn.onclick = () => toggleSkill(skill.id, skill.label);
+            dropdownList.appendChild(btn);
+        });
+        
+        // Speed slider
+        speedSlider.value = streamingSpeed;
+        speedValue.innerText = streamingSpeed;
+        speedSlider.addEventListener('input', () => {
+            streamingSpeed = parseInt(speedSlider.value);
+            speedValue.innerText = streamingSpeed;
+            localStorage.setItem('luvuno_speed', streamingSpeed);
+        });
+        
+        // Font size slider
+        fontSizeSlider.value = currentFontSize;
+        fontSizeValue.innerText = currentFontSize;
+        applyFontSize(currentFontSize);
+        fontSizeSlider.addEventListener('input', () => {
+            currentFontSize = parseInt(fontSizeSlider.value);
+            fontSizeValue.innerText = currentFontSize;
+            applyFontSize(currentFontSize);
+        });
+        
+        function generateReasoningTree(question, answer) {
+            const steps = [
+                { icon: "🔍", title: "Problem Decomposition", desc: `Analyzing: "${question.substring(0, 60)}${question.length > 60 ? '...' : ''}"` },
+                { icon: "🧩", title: "Pattern Recognition", desc: "Identifying known solution paths and relevant knowledge domains" },
+                { icon: "⚛️", title: "Quantum-Inspired Optimization", desc: "Superposition of multiple approaches, entanglement of related concepts" },
+                { icon: "🎯", title: "Synthesis", desc: "Collapsing possibilities into coherent, actionable response" }
+            ];
+            let treeHtml = `<div class="quantum-reasoning-tree"><span class="reasoning-toggle" onclick="toggleReasoning(this)">▼</span> <strong>⚛️ QUANTUM REASONING TREE</strong>`;
+            treeHtml += `<div class="reasoning-content">`;
+            steps.forEach((step, i) => {
+                treeHtml += `<div class="reasoning-node"><span class="reasoning-toggle" onclick="toggleReasoning(this)">▼</span> ${step.icon} <strong>Step ${i+1}: ${step.title}</strong>`;
+                treeHtml += `<div class="reasoning-content"><span style="color:var(--secondary);">${step.desc}</span></div></div>`;
+            });
+            treeHtml += `<div class="reasoning-node"><span class="reasoning-toggle" onclick="toggleReasoning(this)">▼</span> 🤖 <strong>Final Response</strong>`;
+            treeHtml += `<div class="reasoning-content">${answer}</div></div>`;
+            treeHtml += `</div></div>`;
+            return treeHtml;
+        }
+        
+        function toggleReasoning(element) {
+            const content = element.parentElement?.querySelector('.reasoning-content');
+            if (content) {
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    element.innerHTML = '▼';
+                } else {
+                    content.style.display = 'none';
+                    element.innerHTML = '▶';
+                }
+            }
+        }
+        window.toggleReasoning = toggleReasoning;
+        
+        function getSystemPrompt() {
+            let base = "You are Luvuno, a quantum AI assistant for MindTech Industries. Answer clearly. NEVER use asterisks (*) for emphasis. Use **bold** with double asterisks or HTML tags. Use emojis where appropriate. Format with proper HTML paragraphs.";
+            const skillPrompts = {
+                coding: " You are a senior software engineer. Write clean code.",
+                image: " You are an expert prompt engineer. For images, provide Pollinations.ai URLs.",
+                math: " You are a mathematics professor. Break down problems step by step.",
+                science: " You are a science educator. Explain clearly with examples.",
+                robotics: " You are a robotics engineer. Answer technical questions.",
+                africanHistory: " You are a professor of African history. Be accurate and proud.",
+                finance: " You are a financial analyst. Provide market insights.",
+                health: " You are a wellness advisor. Give general health information.",
+                wealth: " You are a wealth building coach. Provide practical strategies.",
+                strategy: " You are a business strategist. Help with planning."
+            };
+            if (activeSkill && skillPrompts[activeSkill]) base = skillPrompts[activeSkill] + " " + base;
+            if (quantumThinkMode) base += " Break down complex problems into clear steps. Use format: Step 1, Step 2, Step 3, Summary.";
+            return base;
+        }
+        
+        async function sendToBackend(message) {
+            if (currentController) currentController.abort();
+            currentController = new AbortController();
+            stopBtn.classList.add('show');
+            sendBtn.disabled = true;
+            isStreaming = true;
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/chat`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        message: message, 
+                        portal: activeSkill || "quantum",
+                        system: quantumThinkMode ? "quantumthink" : "standard"
+                    }),
+                    signal: currentController.signal
+                });
+                const data = await response.json();
+                return data.response || "I am having trouble. Please try again.";
+            } catch (error) {
+                if (error.name === 'AbortError') return "[Response stopped]";
+                console.error("Backend error:", error);
+                return "Connection error. Please try again.";
+            } finally {
+                currentController = null;
+                stopBtn.classList.remove('show');
+                sendBtn.disabled = false;
+                isStreaming = false;
+            }
+        }
+        
+        async function addMessage(text, sender, options = {}) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            const avatar = sender === 'user' ? '👤' : '🤖';
+            messageDiv.innerHTML = `<div class="message-avatar">${avatar}</div><div class="message-content"><div class="message-text"></div><div class="message-time">${new Date().toLocaleTimeString()}</div></div>`;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            const textSpan = messageDiv.querySelector('.message-text');
+            
+            let processedText = text;
+            processedText = processedText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            processedText = processedText.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            processedText = marked.parse(processedText);
+            
+            if (options.isImage && options.imageUrl) {
+                textSpan.innerHTML = `<img src="${options.imageUrl}" style="max-width:100%; border-radius:16px; margin: 8px 0;">`;
+            } else if (sender === 'ai' && quantumThinkMode && !options.noTree) {
+                const treeHtml = generateReasoningTree(conversationHistory[conversationHistory.length-2]?.content || "query", processedText);
+                textSpan.innerHTML = treeHtml;
+            } else {
+                textSpan.innerHTML = processedText;
+            }
+            
+            if (sender === 'ai') {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'message-actions';
+                actionsDiv.innerHTML = `
+                    <div class="message-action copy-action"><i class="fas fa-copy"></i> Copy</div>
+                    <div class="message-action regenerate-action"><i class="fas fa-undo-alt"></i> Regenerate</div>
+                    <div class="message-action speak-action"><i class="fas fa-volume-up"></i> Speak</div>
+                    <div class="message-action share-action"><i class="fas fa-share-alt"></i> Share</div>
+                `;
+                messageDiv.querySelector('.message-content').appendChild(actionsDiv);
+                
+                actionsDiv.querySelector('.copy-action').onclick = () => {
+                    navigator.clipboard.writeText(text);
+                    uploadStatus.innerText = '✓ Copied';
+                    setTimeout(() => uploadStatus.innerText = '', 1500);
+                };
+                actionsDiv.querySelector('.speak-action').onclick = () => {
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                        window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+                    }
+                };
+                actionsDiv.querySelector('.share-action').onclick = () => {
+                    if (navigator.share) navigator.share({ title: 'Luvuno Response', text: text });
+                    else navigator.clipboard.writeText(text);
+                };
+                actionsDiv.querySelector('.regenerate-action').onclick = async () => {
+                    textSpan.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    const lastUserMsg = conversationHistory.filter(m => m.role === 'user').pop()?.content;
                     if (lastUserMsg) {
                         const newResponse = await sendToBackend(lastUserMsg);
                         let newProcessed = newResponse.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<em>$1</em>');
                         newProcessed = marked.parse(newProcessed);
-                        if (quantumThinkMode) {
-                            textSpan.innerHTML = generateReasoningTree(lastUserMsg, newProcessed);
-                        } else {
-                            textSpan.innerHTML = newProcessed;
-                        }
+                        textSpan.innerHTML = newProcessed;
                     }
                 };
             }
             
-            // Save to localStorage
             if (currentChatId) {
                 let chats = JSON.parse(localStorage.getItem('luvuno_chats') || '{}');
                 if (!chats[currentChatId]) chats[currentChatId] = [];
@@ -40,20 +976,6 @@
             }
         }
         
-        // Streaming response
-        async function streamResponse(text, element, speed) {
-            element.innerHTML = "";
-            const chars = text.split('');
-            for (let i = 0; i < chars.length; i++) {
-                if (!isStreaming) break;
-                element.innerHTML += chars[i];
-                await new Promise(r => setTimeout(r, 1000 / speed));
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
-            return element.innerHTML;
-        }
-        
-        // Process user input with paste support and image generation
         async function processUserInput(input) {
             const blocked = ['suicide method', 'how to kill', 'make bomb', 'child porn'];
             if (blocked.some(term => input.toLowerCase().includes(term))) {
@@ -61,7 +983,6 @@
                 return;
             }
             
-            // Image generation
             const imageKw = ['give me an image', 'generate an image', 'create an image', 'show me an image'];
             if (imageKw.some(kw => input.toLowerCase().includes(kw))) {
                 let prompt = input;
@@ -77,7 +998,6 @@
             await addMessage(input, 'user');
             chatInput.value = '';
             
-            // URL reading
             let finalMessage = input;
             const urlMatch = input.match(/https?:\/\/[^\s]+/);
             if (urlMatch) {
@@ -104,7 +1024,7 @@
             await addMessage(response, 'ai');
         }
         
-        // File upload (TXT, PDF, ZIP, images)
+        // File upload
         attachBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
@@ -145,7 +1065,6 @@
             fileInput.value = '';
         });
         
-        // Image upload (camera button)
         imageBtn.addEventListener('click', () => imageInput.click());
         imageInput.addEventListener('change', async (e) => {
             if (e.target.files.length > 0) {
@@ -160,31 +1079,16 @@
                 messagesContainer.appendChild(typingDiv);
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 
-                const response = await sendToBackend(`I uploaded an image named ${file.name}. Please describe what you think it might contain or help me understand it.`);
+                const response = await sendToBackend(`I uploaded an image named ${file.name}. Please help me understand it.`);
                 typingDiv.remove();
-                await addMessage(response + `\n\n📸 Image URL: ${imageUrl}`, 'ai', { isImage: true, imageUrl: imageUrl, noTree: true });
+                await addMessage(response + `\n\n📸 Image ready`, 'ai');
                 uploadStatus.innerText = `✓ Image ready`;
                 setTimeout(() => uploadStatus.innerText = '', 2000);
                 imageInput.value = '';
             }
         });
         
-        // Paste from document (preserves formatting)
-        chatInput.addEventListener('paste', (e) => {
-            e.preventDefault();
-            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-            const html = (e.originalEvent || e).clipboardData.getData('text/html');
-            if (html && html.includes('<')) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-                const plainText = tempDiv.textContent || tempDiv.innerText || '';
-                chatInput.value += plainText;
-            } else {
-                chatInput.value += text;
-            }
-        });
-        
-        // Voice input (Web Speech API with Zulu support)
+        // Voice input
         let recognition = null;
         let isRecording = false;
         
@@ -217,11 +1121,10 @@
             } else {
                 voiceBtn.style.opacity = '0.5';
                 voiceBtn.disabled = true;
-                voiceBtn.title = 'Voice not supported';
             }
         }
         
-        // Export chat (PDF and Word)
+        // Export chat
         exportChatBtn.addEventListener('click', async () => {
             const exportContent = messagesContainer.cloneNode(true);
             const style = document.createElement('style');
@@ -256,11 +1159,10 @@
             document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('active'));
             conversationHistory = [];
             currentChatId = 'chat_' + Date.now();
-            messagesContainer.innerHTML = `<div class="message ai"><div class="message-avatar">🤖</div><div class="message-content"><p><strong>Luvuno Ultimate</strong> — Ready. How can I help?</p><div class="message-time">⚛️ Quantum active</div></div></div>`;
+            messagesContainer.innerHTML = `<div class="message ai"><div class="message-avatar">🤖</div><div class="message-content"><p><strong>Hi! I'm Luvuno</strong>, your AI assistant for Luvuno OS on the quantum portal. 🌌</p><p>I'm here to help you navigate, explore, and get things done.</p><div class="message-time">⚛️ Quantum active</div></div></div>`;
             loadChatHistoryList();
         }
         
-        // Load chat history sidebar
         function loadChatHistoryList() {
             const historyList = JSON.parse(localStorage.getItem('luvuno_history_list') || '[]');
             const chats = JSON.parse(localStorage.getItem('luvuno_chats') || '{}');
@@ -333,7 +1235,6 @@
                 '⚛️ Quantum Reasoning mode deactivated. Back to standard responses.', 'ai');
         });
         
-        // Event handlers
         sendBtn.addEventListener('click', async () => {
             const msg = chatInput.value.trim();
             if (!msg) return;
@@ -349,7 +1250,6 @@
         
         newChatBtn.addEventListener('click', newChat);
         
-        // Scroll handling
         messagesContainer.addEventListener('scroll', () => {
             const nearBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 100;
             scrollDownBtn.classList.toggle('show', !nearBottom);
@@ -358,7 +1258,6 @@
             messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior: 'smooth' });
         });
         
-        // Modal functions
         function closeModal(id) {
             document.getElementById(id).classList.remove('active');
         }
@@ -381,14 +1280,12 @@
             }
         };
         
-        // Mobile menu
         const menuToggleBtn = document.getElementById('menuToggle');
         const sidebar = document.getElementById('sidebar');
         if (menuToggleBtn) {
             menuToggleBtn.onclick = () => sidebar.classList.toggle('open');
         }
         
-        // Demo login
         document.getElementById('demoLoginBtn').onclick = () => {
             loginOverlay.style.display = 'none';
             appContainer.style.display = 'flex';
@@ -398,7 +1295,6 @@
             userEmailSpan.innerText = 'khulu@mindtech.africa';
         };
         
-        // Particles
         particlesJS('particles-js', {
             particles: {
                 number: { value: 70, density: { enable: true, value_area: 1000 } },
@@ -412,15 +1308,13 @@
             interactivity: { events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" } } }
         });
         
-        console.log("🚀 LUVUNO ULTIMATE — Fully Deployed");
-        console.log("   ✅ Quantum visual reasoning tree");
-        console.log("   ✅ No asterisks — proper HTML formatting");
+        console.log("🚀 LUVUNO — Fully Deployed | Powered by MindTech Industries");
+        console.log("   ✅ Welcome message: Hi! I'm Luvuno");
+        console.log("   ✅ Quantum reasoning tree");
+        console.log("   ✅ No asterisks — HTML formatting");
         console.log("   ✅ PDF/Word export");
         console.log("   ✅ Document paste support");
-        console.log("   ✅ ChatGPT font scale + user slider");
         console.log("   ✅ 5 logos with CleanMachine center");
-        console.log("   ✅ Profile in left pane bottom");
-        console.log("   ✅ Stop button, scroll button, all controls");
     </script>
 </body>
 </html>
