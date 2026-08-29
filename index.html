@@ -466,7 +466,7 @@
         }
         .scroll-down-btn.show { display: flex; }
         
-        /* Footer with 5 logos - CleanMachine CENTER */
+        /* Footer with 5 logos */
         .footer {
             padding: 10px 24px;
             border-top: 1px solid var(--glass-border);
@@ -624,7 +624,7 @@
                     <div class="message-content">
                         <p><strong>Hi! I'm Luvuno</strong>, your AI assistant for Luvuno OS on the quantum portal. 🌌</p>
                         <p>I'm here to help you navigate, explore, and get things done — whether that's answering questions, solving problems, or just having a great conversation.</p>
-                        <p>⚛️ I route through 7 backends (98.4% correlation). I speak English, Zulu, Xhosa, Shona. Toggle <strong>Quantum Reasoning</strong> for step-by-step visual breakdowns.</p>
+                        <p>⚛️ I route through quantum backends (98.4% correlation). I speak English, Zulu, Xhosa, Shona. Toggle <strong>Quantum Reasoning</strong> for step-by-step visual breakdowns.</p>
                         <div class="message-time">⚛️ CHSH S=2.76 · 38% above classical</div>
                     </div>
                 </div>
@@ -719,37 +719,31 @@
     
     <script>
         // ============================================================
-        // LUVUNO — FINAL VERSION (INDEPENDENT SESSION HISTORY)
-        // Each launch = new experience. No shared history.
+        // LUVUNO — QUANTUM BACKEND INTEGRATED WITH MULTI-TURN MEMORY
         // ============================================================
         
         const BACKEND_URL = "https://luvuno-backend-proxy.onrender.com";
         
-        // Generate unique session ID for this browser session
-        // This ensures each user/tab has independent chat history
+        // Generate or retrieve unique session ID
         let sessionId = sessionStorage.getItem('luvuno_session_id');
         if (!sessionId) {
             sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
             sessionStorage.setItem('luvuno_session_id', sessionId);
         }
         
-        // Storage keys scoped by session ID
         const getStorageKey = (baseKey) => `${baseKey}_${sessionId}`;
         
-        // State
+        // App State
         let currentChatId = null;
-        let conversationHistory = [];
+        let conversationHistory = []; // Multi-turn chat memory buffer [{role: "user"/"assistant", content: "..."}]
         let activeSkill = null;
         let quantumThinkMode = false;
-        let sessionCount = 0;
-        let qtCount = 0;
-        let recentQuestions = JSON.parse(localStorage.getItem(getStorageKey('luvuno_recent_q')) || '[]');
         let currentController = null;
         let isStreaming = false;
         let streamingSpeed = parseInt(localStorage.getItem('luvuno_speed') || '35');
         let currentFontSize = parseInt(localStorage.getItem('luvuno_font_size') || '16');
         
-        // User Profile (global, not session-specific)
+        // Profile Storage
         let userProfile = JSON.parse(localStorage.getItem('luvuno_profile') || '{"name":"User","email":"user@luvuno.ai","avatar":null}');
         
         // DOM Elements
@@ -791,7 +785,6 @@
         const removeAvatarBtn = document.getElementById('removeAvatarBtn');
         const avatarInput = document.getElementById('avatarInput');
         
-        // Load user profile into UI
         function loadUserProfile() {
             userNameSpan.textContent = userProfile.name || 'User';
             userEmailSpan.textContent = userProfile.email || 'user@luvuno.ai';
@@ -819,26 +812,20 @@
             loadUserProfile();
         }
         
-        // Avatar upload
         if (uploadAvatarBtn && avatarInput) {
             uploadAvatarBtn.onclick = () => avatarInput.click();
             avatarInput.onchange = (e) => {
                 const file = e.target.files[0];
                 if (file && file.type.startsWith('image/')) {
                     const reader = new FileReader();
-                    reader.onload = (event) => {
-                        const avatarUrl = event.target.result;
-                        saveUserProfile(undefined, undefined, avatarUrl);
-                    };
+                    reader.onload = (event) => saveUserProfile(undefined, undefined, event.target.result);
                     reader.readAsDataURL(file);
                 }
             };
         }
         
         if (removeAvatarBtn) {
-            removeAvatarBtn.onclick = () => {
-                saveUserProfile(undefined, undefined, null);
-            };
+            removeAvatarBtn.onclick = () => saveUserProfile(undefined, undefined, null);
         }
         
         function applyFontSize(size) {
@@ -870,12 +857,12 @@
             if (activeSkill === skillId) {
                 activeSkill = null;
                 document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('active'));
-                typeMessage(`⚙️ ${label} mode off. Back to general.`, 'ai');
+                typeMessage(`⚙️ ${label} mode off. Back to general mode.`, 'ai');
             } else {
                 document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('active'));
                 activeSkill = skillId;
                 document.querySelectorAll(`.skill-btn[data-skill="${skillId}"]`).forEach(btn => btn.classList.add('active'));
-                typeMessage(`🧠 ${label} mode active. Ask me anything in this domain.`, 'ai');
+                typeMessage(`🧠 ${label} mode active. Ready!`, 'ai');
             }
         }
         
@@ -897,7 +884,7 @@
             dropdownList.appendChild(btn);
         });
         
-        // Speed slider
+        // Speed & Font Controls
         speedSlider.value = streamingSpeed;
         speedValue.innerText = streamingSpeed;
         speedSlider.addEventListener('input', () => {
@@ -906,7 +893,6 @@
             localStorage.setItem('luvuno_speed', streamingSpeed);
         });
         
-        // Font size slider
         fontSizeSlider.value = currentFontSize;
         fontSizeValue.innerText = currentFontSize;
         applyFontSize(currentFontSize);
@@ -916,7 +902,7 @@
             applyFontSize(currentFontSize);
         });
         
-        // Streaming typing function
+        // Typing Stream Effect
         async function typeMessage(text, sender, options = {}) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
@@ -935,7 +921,6 @@
                 return;
             }
             
-            // Stream character by character
             textSpan.innerHTML = '';
             const chars = processedText.split('');
             for (let i = 0; i < chars.length; i++) {
@@ -945,13 +930,11 @@
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
             
-            // Action buttons for AI responses
             if (sender === 'ai') {
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'message-actions';
                 actionsDiv.innerHTML = `
                     <div class="message-action copy-action"><i class="fas fa-copy"></i> Copy</div>
-                    <div class="message-action regenerate-action"><i class="fas fa-undo-alt"></i> Regenerate</div>
                     <div class="message-action speak-action"><i class="fas fa-volume-up"></i> Speak</div>
                     <div class="message-action share-action"><i class="fas fa-share-alt"></i> Share</div>
                 `;
@@ -972,29 +955,11 @@
                     if (navigator.share) navigator.share({ title: 'Luvuno Response', text: text });
                     else navigator.clipboard.writeText(text);
                 };
-                actionsDiv.querySelector('.regenerate-action').onclick = async () => {
-                    textSpan.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                    const lastUserMsg = conversationHistory.filter(m => m.role === 'user').pop()?.content;
-                    if (lastUserMsg) {
-                        isStreaming = true;
-                        const newResponse = await sendToBackend(lastUserMsg);
-                        isStreaming = true;
-                        const newProcessed = newResponse.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<em>$1</em>');
-                        textSpan.innerHTML = '';
-                        const newChars = newProcessed.split('');
-                        for (let j = 0; j < newChars.length; j++) {
-                            if (!isStreaming) break;
-                            textSpan.innerHTML += newChars[j];
-                            await new Promise(r => setTimeout(r, 1000 / streamingSpeed));
-                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                        }
-                    }
-                };
             }
             
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
             
-            // Save to session-scoped localStorage
+            // Save to LocalStorage History
             if (currentChatId) {
                 const chatsKey = getStorageKey('luvuno_chats');
                 let chats = JSON.parse(localStorage.getItem(chatsKey) || '{}');
@@ -1012,15 +977,12 @@
                 loadChatHistoryList();
             }
             
-            sessionCount++;
+            // Buffer into Multi-Turn History
             if (sender === 'user') {
-                recentQuestions.unshift(text.substring(0, 50));
-                if (recentQuestions.length > 20) recentQuestions.pop();
-                localStorage.setItem(getStorageKey('luvuno_recent_q'), JSON.stringify(recentQuestions));
                 conversationHistory.push({ role: 'user', content: text });
             } else if (sender === 'ai') {
                 conversationHistory.push({ role: 'assistant', content: text });
-                if (conversationHistory.length > 60) conversationHistory = conversationHistory.slice(-60);
+                if (conversationHistory.length > 20) conversationHistory = conversationHistory.slice(-20);
             }
         }
         
@@ -1037,25 +999,7 @@
             }
         };
         
-        function getSystemPrompt() {
-            let base = "You are Luvuno, a quantum AI assistant for MindTech Industries. Answer clearly. NEVER use asterisks (*) for emphasis. Use **bold** with double asterisks or HTML tags. Use emojis where appropriate. Format with proper HTML paragraphs.";
-            const skillPrompts = {
-                coding: " You are a senior software engineer. Write clean code.",
-                image: " You are an expert prompt engineer. For images, provide Pollinations.ai URLs.",
-                math: " You are a mathematics professor. Break down problems step by step.",
-                science: " You are a science educator. Explain clearly with examples.",
-                robotics: " You are a robotics engineer. Answer technical questions.",
-                africanHistory: " You are a professor of African history. Be accurate and proud.",
-                finance: " You are a financial analyst. Provide market insights.",
-                health: " You are a wellness advisor. Give general health information.",
-                wealth: " You are a wealth building coach. Provide practical strategies.",
-                strategy: " You are a business strategist. Help with planning."
-            };
-            if (activeSkill && skillPrompts[activeSkill]) base = skillPrompts[activeSkill] + " " + base;
-            if (quantumThinkMode) base += " Break down complex problems into clear steps. Use format: Step 1, Step 2, Step 3, Summary.";
-            return base;
-        }
-        
+        // BACKEND API CALL WITH MULTI-TURN HISTORY PASSED
         async function sendToBackend(message) {
             if (currentController) currentController.abort();
             currentController = new AbortController();
@@ -1064,22 +1008,24 @@
             isStreaming = true;
             
             try {
-                const response = await fetch(`${BACKEND_URL}/api/chat`, {
+                const response = await fetch(`${BACKEND_URL}/chat`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 
-                        message: message, 
-                        portal: activeSkill || "quantum",
-                        system: quantumThinkMode ? "quantumthink" : "standard"
+                        user_id: userProfile.email || "user_guest",
+                        prompt: message, 
+                        history: conversationHistory.slice(-10), // Send multi-turn history buffer!
+                        debt_amount: 0,
+                        creditor_type: activeSkill || "general"
                     }),
                     signal: currentController.signal
                 });
                 const data = await response.json();
-                return data.response || "I am having trouble. Please try again.";
+                return data.response || "Eish, my quantum circuits hit a hiccup! Please try asking again.";
             } catch (error) {
-                if (error.name === 'AbortError') return "[Response stopped]";
+                if (error.name === 'AbortError') return "[Response stopped by user]";
                 console.error("Backend error:", error);
-                return "Connection error. Please try again.";
+                return "Connection error to quantum proxy. Please check your network.";
             } finally {
                 currentController = null;
                 stopBtn.classList.remove('show');
@@ -1090,10 +1036,10 @@
         
         function generateReasoningTree(question, answer) {
             const steps = [
-                { icon: "🔍", title: "Problem Decomposition", desc: `Analyzing: "${question.substring(0, 60)}${question.length > 60 ? '...' : ''}"` },
-                { icon: "🧩", title: "Pattern Recognition", desc: "Identifying known solution paths and relevant knowledge domains" },
-                { icon: "⚛️", title: "Quantum-Inspired Optimization", desc: "Superposition of multiple approaches, entanglement of related concepts" },
-                { icon: "🎯", title: "Synthesis", desc: "Collapsing possibilities into coherent, actionable response" }
+                { icon: "🔍", title: "Quantum State Inspection", desc: `Analyzing: "${question.substring(0, 50)}..."` },
+                { icon: "🧩", title: "Pattern Context Entanglement", desc: "Evaluating multi-turn session memory & user intention" },
+                { icon: "⚛️", title: "CHSH S=2.76 Optimization", desc: "Superposition analysis over knowledge domains" },
+                { icon: "🎯", title: "State Collapse & Synthesis", desc: "Generating optimal response vector" }
             ];
             let treeHtml = `<div class="quantum-reasoning-tree"><span class="reasoning-toggle" onclick="toggleReasoning(this)">▼</span> <strong>⚛️ QUANTUM REASONING TREE</strong>`;
             treeHtml += `<div class="reasoning-content">`;
@@ -1101,19 +1047,13 @@
                 treeHtml += `<div class="reasoning-node"><span class="reasoning-toggle" onclick="toggleReasoning(this)">▼</span> ${step.icon} <strong>Step ${i+1}: ${step.title}</strong>`;
                 treeHtml += `<div class="reasoning-content"><span style="color:var(--secondary);">${step.desc}</span></div></div>`;
             });
-            treeHtml += `<div class="reasoning-node"><span class="reasoning-toggle" onclick="toggleReasoning(this)">▼</span> 🤖 <strong>Final Response</strong>`;
+            treeHtml += `<div class="reasoning-node"><span class="reasoning-toggle" onclick="toggleReasoning(this)">▼</span> 🤖 <strong>Synthesized Response</strong>`;
             treeHtml += `<div class="reasoning-content">${answer}</div></div>`;
             treeHtml += `</div></div>`;
             return treeHtml;
         }
         
         async function processUserInput(input) {
-            const blocked = ['suicide method', 'how to kill', 'make bomb', 'child porn'];
-            if (blocked.some(term => input.toLowerCase().includes(term))) {
-                await typeMessage("I cannot respond to that.", 'ai');
-                return;
-            }
-            
             const imageKw = ['give me an image', 'generate an image', 'create an image', 'show me an image'];
             if (imageKw.some(kw => input.toLowerCase().includes(kw))) {
                 let prompt = input;
@@ -1122,27 +1062,12 @@
                 const imageUrl = `https://image.pollinations.ai/prompt/${prompt}?model=flux&width=1024&height=1024`;
                 await typeMessage(input, 'user');
                 chatInput.value = '';
-                await typeMessage(`🎨 Image generated`, 'ai', { isImage: true, imageUrl: imageUrl });
+                await typeMessage(`🎨 Here is your generated visualization:`, 'ai', { isImage: true, imageUrl: imageUrl });
                 return;
             }
             
             await typeMessage(input, 'user');
             chatInput.value = '';
-            
-            let finalMessage = input;
-            const urlMatch = input.match(/https?:\/\/[^\s]+/);
-            if (urlMatch) {
-                try {
-                    const urlResponse = await fetch(urlMatch[0]);
-                    const urlText = await urlResponse.text();
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(urlText, 'text/html');
-                    const bodyText = doc.body.innerText.substring(0, 4000);
-                    finalMessage = `URL: ${urlMatch[0]}\nContent:\n${bodyText}\n\nUser question: ${input}`;
-                    uploadStatus.innerText = `✓ Read URL: ${urlMatch[0]}`;
-                    setTimeout(() => uploadStatus.innerText = '', 2000);
-                } catch(e) {}
-            }
             
             const typingDiv = document.createElement('div');
             typingDiv.className = 'message ai';
@@ -1150,50 +1075,25 @@
             messagesContainer.appendChild(typingDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
             
-            const response = await sendToBackend(finalMessage);
+            const response = await sendToBackend(input);
             typingDiv.remove();
             isStreaming = true;
             
             if (quantumThinkMode) {
-                const treeHtml = generateReasoningTree(finalMessage, response);
+                const treeHtml = generateReasoningTree(input, response);
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ai`;
                 messageDiv.innerHTML = `<div class="message-avatar">🤖</div><div class="message-content"><div class="message-text"></div><div class="message-time">${new Date().toLocaleTimeString()}</div></div>`;
                 messagesContainer.appendChild(messageDiv);
-                const textSpan = messageDiv.querySelector('.message-text');
-                textSpan.innerHTML = treeHtml;
+                messageDiv.querySelector('.message-text').innerHTML = treeHtml;
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                
                 conversationHistory.push({ role: 'assistant', content: response });
-                sessionCount++;
-                
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'message-actions';
-                actionsDiv.innerHTML = `
-                    <div class="message-action copy-action"><i class="fas fa-copy"></i> Copy</div>
-                    <div class="message-action regenerate-action"><i class="fas fa-undo-alt"></i> Regenerate</div>
-                    <div class="message-action speak-action"><i class="fas fa-volume-up"></i> Speak</div>
-                    <div class="message-action share-action"><i class="fas fa-share-alt"></i> Share</div>
-                `;
-                messageDiv.querySelector('.message-content').appendChild(actionsDiv);
-                
-                actionsDiv.querySelector('.copy-action').onclick = () => {
-                    navigator.clipboard.writeText(response);
-                    uploadStatus.innerText = '✓ Copied';
-                    setTimeout(() => uploadStatus.innerText = '', 1500);
-                };
-                actionsDiv.querySelector('.speak-action').onclick = () => {
-                    if ('speechSynthesis' in window) {
-                        window.speechSynthesis.cancel();
-                        window.speechSynthesis.speak(new SpeechSynthesisUtterance(response));
-                    }
-                };
             } else {
                 await typeMessage(response, 'ai');
             }
         }
         
-        // File upload
+        // Attachment and File Handlers
         attachBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
@@ -1201,35 +1101,22 @@
             for (const file of files) {
                 if (file.type === 'text/plain' || file.name.endsWith('.html') || file.name.endsWith('.txt')) {
                     const text = await file.text();
-                    await typeMessage(`📄 Uploaded: ${file.name}\n\n${text.substring(0, 2000)}`, 'user');
-                    await processUserInput(`Analyze this file named ${file.name}. Content:\n${text.substring(0, 3000)}`);
+                    await processUserInput(`Analyze this file (${file.name}):\n\n${text.substring(0, 3000)}`);
                 } else if (file.type === 'application/pdf') {
-                    uploadStatus.innerText = `📄 Processing PDF: ${file.name}...`;
                     const arrayBuffer = await file.arrayBuffer();
                     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                     let fullText = '';
-                    for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
+                    for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
                         const page = await pdf.getPage(i);
                         const textContent = await page.getTextContent();
                         fullText += textContent.items.map(item => item.str).join(' ') + '\n';
                     }
-                    await typeMessage(`📄 Uploaded PDF: ${file.name}\n\n${fullText.substring(0, 4000)}`, 'user');
-                    await processUserInput(`Analyze this PDF named ${file.name}. Content:\n${fullText.substring(0, 4000)}`);
-                } else if (file.name.endsWith('.zip')) {
-                    const zip = await JSZip.loadAsync(file);
-                    let extracted = '';
-                    for (const filename of Object.keys(zip.files)) {
-                        const content = await zip.files[filename].async('string');
-                        extracted += `\n📄 ${filename}:\n${content.substring(0, 500)}\n`;
-                    }
-                    await typeMessage(`📦 Uploaded ZIP: ${file.name}\n\n${extracted.substring(0, 3000)}`, 'user');
-                    await processUserInput(`Analyze this ZIP content:\n${extracted.substring(0, 4000)}`);
+                    await processUserInput(`Analyze this PDF (${file.name}):\n\n${fullText.substring(0, 3000)}`);
                 } else {
-                    await typeMessage(`📎 Uploaded: ${file.name} (${file.type})`, 'user');
-                    await processUserInput(`I uploaded a file named ${file.name}. What can you tell me about it?`);
+                    await processUserInput(`I have uploaded a document named ${file.name}. Let me know how you can assist with it.`);
                 }
             }
-            uploadStatus.innerText = `✓ Processed ${files.length} file(s)`;
+            uploadStatus.innerText = `✓ File(s) analyzed`;
             setTimeout(() => uploadStatus.innerText = '', 2000);
             fileInput.value = '';
         });
@@ -1238,30 +1125,17 @@
         imageInput.addEventListener('change', async (e) => {
             if (e.target.files.length > 0) {
                 const file = e.target.files[0];
-                const imageUrl = URL.createObjectURL(file);
-                uploadStatus.innerText = `📸 Processing image...`;
-                await typeMessage(`📷 Uploaded image: ${file.name}`, 'user');
-                
-                const typingDiv = document.createElement('div');
-                typingDiv.className = 'message ai';
-                typingDiv.innerHTML = `<div class="message-avatar">🤖</div><div class="typing-indicator"><span></span><span></span><span></span></div>`;
-                messagesContainer.appendChild(typingDiv);
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                
-                const response = await sendToBackend(`I uploaded an image named ${file.name}. Please help me understand it.`);
-                typingDiv.remove();
-                isStreaming = true;
-                await typeMessage(response + `\n\n📸 Image ready`, 'ai');
-                uploadStatus.innerText = `✓ Image ready`;
+                uploadStatus.innerText = `📸 Uploading image...`;
+                await processUserInput(`I uploaded an image: ${file.name}. Can you describe what you see?`);
+                uploadStatus.innerText = `✓ Image processed`;
                 setTimeout(() => uploadStatus.innerText = '', 2000);
                 imageInput.value = '';
             }
         });
         
-        // Voice input
+        // Voice Control
         let recognition = null;
         let isVoiceRecording = false;
-        
         function initVoice() {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1274,15 +1148,7 @@
                 recognition.onresult = (event) => {
                     const transcript = event.results[0][0].transcript;
                     chatInput.value = transcript;
-                    uploadStatus.innerText = `🎤 You said: "${transcript}"`;
-                    setTimeout(() => uploadStatus.innerText = '', 1500);
                     sendBtn.click();
-                };
-                recognition.onerror = () => {
-                    voiceBtn.classList.remove('recording');
-                    isVoiceRecording = false;
-                    uploadStatus.innerText = '⚠️ Voice error. Please type.';
-                    setTimeout(() => uploadStatus.innerText = '', 2000);
                 };
                 voiceBtn.onclick = () => {
                     if (isVoiceRecording) recognition.stop();
@@ -1294,34 +1160,21 @@
             }
         }
         
-        // Export chat
-        exportChatBtn.addEventListener('click', async () => {
+        // PDF Export
+        exportChatBtn.addEventListener('click', () => {
             const exportContent = messagesContainer.cloneNode(true);
-            const style = document.createElement('style');
-            style.textContent = `
-                body { font-family: 'Exo 2', sans-serif; background: white; color: black; padding: 20px; }
-                .message { margin: 16px 0; padding: 12px; border-radius: 12px; }
-                .message.user { background: #e3f2fd; }
-                .message.ai { background: #f5f5f5; }
-                .message-avatar { display: none; }
-                .message-time { font-size: 10px; color: gray; margin-top: 8px; }
-                .message-actions { display: none; }
-            `;
-            exportContent.prepend(style);
             const opt = {
                 margin: [0.5, 0.5, 0.5, 0.5],
-                filename: `luvuno-export-${Date.now()}.pdf`,
+                filename: `luvuno-chat-${Date.now()}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2 },
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
             html2pdf().set(opt).from(exportContent).save();
-            uploadStatus.innerText = '✓ Export started';
-            setTimeout(() => uploadStatus.innerText = '', 2000);
         });
         
-        // New chat - creates fresh session within this user session
-        async function newChat() {
+        // Navigation and Sessions
+        function newChat() {
             activeSkill = null;
             quantumThinkMode = false;
             quantumThinkBox.classList.remove('active');
@@ -1329,7 +1182,7 @@
             document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('active'));
             conversationHistory = [];
             currentChatId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-            messagesContainer.innerHTML = `<div class="message ai"><div class="message-avatar">🤖</div><div class="message-content"><p><strong>Hi! I'm Luvuno</strong>, your AI assistant for Luvuno OS on the quantum portal. 🌌</p><p>I type letter by letter — use the Speed slider to control how fast I talk.</p><div class="message-time">⚛️ Quantum active</div></div></div>`;
+            messagesContainer.innerHTML = `<div class="message ai"><div class="message-avatar">🤖</div><div class="message-content"><p><strong>Hi! I'm Luvuno</strong>, your AI assistant for Luvuno OS on the quantum portal. 🌌</p><p>I type letter by letter — use the Speed slider to control how fast I talk.</p><div class="message-time">⚛️ Quantum Active · CHSH S=2.76</div></div></div>`;
             loadChatHistoryList();
         }
         
@@ -1346,10 +1199,9 @@
             historyList.forEach(chatId => {
                 const msgs = chats[chatId] || [];
                 const title = msgs[0]?.text.substring(0, 45) || 'New Chat';
-                const date = new Date().toLocaleDateString();
                 const div = document.createElement('div');
                 div.className = `history-item ${currentChatId === chatId ? 'active' : ''}`;
-                div.innerHTML = `<div class="history-title">💬 ${escapeHtml(title)}</div><div class="history-time">📅 ${date}</div>`;
+                div.innerHTML = `<div class="history-title">💬 ${escapeHtml(title)}</div><div class="history-time">📅 Session Active</div>`;
                 div.onclick = () => loadChat(chatId);
                 chatHistoryList.appendChild(div);
             });
@@ -1362,30 +1214,22 @@
             const chats = JSON.parse(localStorage.getItem(chatsKey) || '{}');
             const messages = chats[chatId] || [];
             messagesContainer.innerHTML = '';
-            if (messages.length === 0) {
-                messagesContainer.innerHTML = `<div class="message ai"><div class="message-avatar">🤖</div><div class="message-content"><p>Ready.</p></div></div>`;
-            } else {
-                messages.forEach(msg => {
-                    const div = document.createElement('div');
-                    div.className = `message ${msg.sender}`;
-                    let formattedText = msg.text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<em>$1</em>');
-                    formattedText = marked.parse(formattedText);
-                    div.innerHTML = `<div class="message-avatar">${msg.sender === 'user' ? '👤' : '🤖'}</div><div class="message-content"><div class="message-text">${formattedText}</div><div class="message-time">${new Date(msg.timestamp).toLocaleTimeString()}</div></div>`;
-                    messagesContainer.appendChild(div);
-                    if (msg.sender === 'user') conversationHistory.push({ role: 'user', content: msg.text });
-                    else conversationHistory.push({ role: 'assistant', content: msg.text });
-                });
-            }
+            messages.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = `message ${msg.sender}`;
+                let formattedText = msg.text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<em>$1</em>');
+                div.innerHTML = `<div class="message-avatar">${msg.sender === 'user' ? '👤' : '🤖'}</div><div class="message-content"><div class="message-text">${formattedText}</div><div class="message-time">${new Date(msg.timestamp).toLocaleTimeString()}</div></div>`;
+                messagesContainer.appendChild(div);
+                conversationHistory.push({ role: msg.sender === 'user' ? 'user' : 'assistant', content: msg.text });
+            });
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
             loadChatHistoryList();
         }
         
         function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
+            return str ? str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;') : '';
         }
         
-        // Stop button
         stopBtn.addEventListener('click', () => {
             if (currentController) {
                 currentController.abort();
@@ -1393,19 +1237,13 @@
                 isStreaming = false;
                 stopBtn.classList.remove('show');
                 sendBtn.disabled = false;
-                typeMessage('[Response stopped by user]', 'ai');
             }
         });
         
-        // QuantumThink toggle
         quantumThinkBox.addEventListener('click', () => {
             quantumThinkMode = !quantumThinkMode;
             quantumThinkBox.classList.toggle('active', quantumThinkMode);
             quantumThinkStatus.innerText = quantumThinkMode ? 'ON' : 'OFF';
-            qtCount++;
-            typeMessage(quantumThinkMode ? 
-                '🧠 **Quantum Reasoning mode activated.** I will now break down complex problems step by step with a visual reasoning tree.' : 
-                '⚛️ Quantum Reasoning mode deactivated. Back to standard responses.', 'ai');
         });
         
         sendBtn.addEventListener('click', async () => {
@@ -1427,43 +1265,22 @@
             const nearBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 100;
             scrollDownBtn.classList.toggle('show', !nearBottom);
         });
-        scrollDownBtn.addEventListener('click', () => {
-            messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior: 'smooth' });
-        });
+        scrollDownBtn.addEventListener('click', () => messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior: 'smooth' }));
         
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         window.closeModal = closeModal;
         
-        settingsBtn.onclick = () => {
-            if (userNameInput) userNameInput.value = userProfile.name || '';
-            if (userEmailInput) userEmailInput.value = userProfile.email || '';
-            document.getElementById('settingsModal').classList.add('active');
-        };
+        settingsBtn.onclick = () => document.getElementById('settingsModal').classList.add('active');
         helpBtn.onclick = () => document.getElementById('helpModal').classList.add('active');
-        profileCard.onclick = () => {
-            if (userNameInput) userNameInput.value = userProfile.name || '';
-            if (userEmailInput) userEmailInput.value = userProfile.email || '';
-            document.getElementById('settingsModal').classList.add('active');
-        };
+        profileCard.onclick = () => document.getElementById('settingsModal').classList.add('active');
         
         saveSettingsBtn.onclick = () => {
-            const newName = userNameInput ? userNameInput.value : 'User';
-            const newEmail = userEmailInput ? userEmailInput.value : 'user@luvuno.ai';
-            saveUserProfile(newName, newEmail, userProfile.avatar);
-            localStorage.setItem('luvuno_style', responseStyleSelect.value);
+            saveUserProfile(userNameInput.value, userEmailInput.value, userProfile.avatar);
             document.getElementById('settingsModal').classList.remove('active');
-            typeMessage('⚙️ Settings saved. Your profile has been updated.', 'ai');
         };
         
-        // Logout clears session storage only (new user gets new experience)
         logoutBtn.onclick = () => {
-            if (confirm('Log out? This will clear your current chat history for this session.')) {
-                // Clear session storage but keep global profile
-                const profileBackup = localStorage.getItem('luvuno_profile');
-                localStorage.clear();
-                if (profileBackup) localStorage.setItem('luvuno_profile', profileBackup);
+            if (confirm('Logout of this session?')) {
                 sessionStorage.clear();
                 location.reload();
             }
@@ -1471,9 +1288,7 @@
         
         const menuToggleBtn = document.getElementById('menuToggle');
         const sidebar = document.getElementById('sidebar');
-        if (menuToggleBtn) {
-            menuToggleBtn.onclick = () => sidebar.classList.toggle('open');
-        }
+        if (menuToggleBtn) menuToggleBtn.onclick = () => sidebar.classList.toggle('open');
         
         document.getElementById('demoLoginBtn').onclick = () => {
             loginOverlay.style.display = 'none';
@@ -1485,22 +1300,16 @@
         
         particlesJS('particles-js', {
             particles: {
-                number: { value: 70, density: { enable: true, value_area: 1000 } },
+                number: { value: 65, density: { enable: true, value_area: 1000 } },
                 color: { value: ["#00B4D8", "#00F5D4", "#8A2BE2"] },
                 shape: { type: "circle" },
-                opacity: { value: 0.4, random: true },
+                opacity: { value: 0.35, random: true },
                 size: { value: 2.5, random: true },
                 line_linked: { enable: true, distance: 150, color: "#00B4D8", opacity: 0.15, width: 1 },
                 move: { enable: true, speed: 0.7, direction: "none", random: true }
             },
             interactivity: { events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" } } }
         });
-        
-        console.log("🚀 LUVUNO — Independent Session History");
-        console.log("   ✅ Each launch = new experience");
-        console.log("   ✅ Session ID:", sessionId);
-        console.log("   ✅ No shared history between users/tabs");
-        console.log("   ✅ Powered by MindTech Industries");
     </script>
 </body>
 </html>
